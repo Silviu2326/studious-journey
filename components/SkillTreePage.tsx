@@ -76,22 +76,18 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeTheme, setActiveTheme] = useState<ThemeType>('COSMIC');
   const [activeTreeId, setActiveTreeId] = useState<string>('fullstack');
-  const [availableTrees, setAvailableTrees] = useState<any[]>([]);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
 
   // Local state for trees to allow adding new ones dynamically
   const [localTreesData, setLocalTreesData] = useState<Record<string, { nodes: SkillNode[], links: SkillLink[] }>>(SKILL_TREES_DATA);
   const [availableTrees, setAvailableTrees] = useState<{ id: string; name: string }[]>(AVAILABLE_TREES);
-  
+
   const [camera, setCamera] = useState<CameraState>({ x: -200, y: -100, zoom: 1 });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const [currentNodes, setCurrentNodes] = useState<SkillNode[]>([]);
-  const [currentLinks, setCurrentLinks] = useState<SkillLink[]>([]);
 
   const theme = THEMES[activeTheme];
   const BackgroundComponent = BACKGROUND_COMPONENTS[activeTheme];
