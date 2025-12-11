@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Search, Target, Filter, MousePointer2, Plus, Minus, 
   Map as MapIcon, X, CheckCircle2, Play, Cpu, Anchor, Palette
@@ -76,6 +76,7 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeTheme, setActiveTheme] = useState<ThemeType>('COSMIC');
   const [activeTreeId, setActiveTreeId] = useState<string>('fullstack');
+  const [availableTrees, setAvailableTrees] = useState<any[]>([]);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
 
@@ -88,6 +89,9 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [currentNodes, setCurrentNodes] = useState<SkillNode[]>([]);
+  const [currentLinks, setCurrentLinks] = useState<SkillLink[]>([]);
 
   const theme = THEMES[activeTheme];
   const BackgroundComponent = BACKGROUND_COMPONENTS[activeTheme];
