@@ -1,0 +1,5 @@
+{
+  "name": "DevPath Gamified Dashboard",
+  "description": "A gamified learning dashboard for fullstack developers featuring daily missions, spaced repetition reviews, skill trees, and AI-powered study assistance.",
+  "requestFramePermissions": []
+}
