@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, CheckCircle2, Lock, Play, FileText, Video, Book, ExternalLink, 
-  HelpCircle, Trophy, Plus, Clock, BrainCircuit, PenTool, Sparkles, ChevronRight, Layers, RotateCw
+  HelpCircle, Trophy, Plus, Clock, BrainCircuit, PenTool, Sparkles, ChevronRight,
+  Layers, RotateCw, Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
+  MessageSquare, Timer, Code, ChevronDown, MonitorPlay, ListTodo, Star
 } from 'lucide-react';
 import { PageView, DojoResource, DojoQuiz } from '../types';
 import { MOCK_DOJO_RESOURCES, MOCK_DOJO_QUIZZES, MOCK_DOJO_PROJECTS, MOCK_DOJO_HISTORY, MOCK_DOJO_NOTES } from '../constants';
@@ -10,40 +12,121 @@ interface DojoPageProps {
   onNavigate: (page: PageView) => void;
 }
 
-type TabType = 'SUMMARY' | 'LEARN' | 'PRACTICE' | 'PROJECTS' | 'NOTES' | 'HISTORY' | 'REVIEW';
+type StepType = 'SUMMARY' | 'LEARN' | 'PRACTICE' | 'PROJECTS' | 'REVIEW';
+type ToolType = 'NOTES' | 'CHAT' | 'TIMER' | 'INFO';
 
-// Updated ResourceItem to handle navigation
+// --- SUB-COMPONENTS ---
+
+// 1. POMODORO TIMER
+const DojoTimer = () => {
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [isActive, setIsActive] = useState(false);
+  const [mode, setMode] = useState<'FOCUS' | 'BREAK'>('FOCUS');
+
+  useEffect(() => {
+    let interval: any;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    } else if (timeLeft === 0) {
+      setIsActive(false);
+      // Bell sound would go here
+    }
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft]);
+
+  const toggleTimer = () => setIsActive(!isActive);
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeft(mode === 'FOCUS' ? 25 * 60 : 5 * 60);
+  };
+  const switchMode = (m: 'FOCUS' | 'BREAK') => {
+    setMode(m);
+    setTimeLeft(m === 'FOCUS' ? 25 * 60 : 5 * 60);
+    setIsActive(false);
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="p-4 bg-slate-900 text-white rounded-xl shadow-lg border border-slate-700">
+      <div className="flex justify-between items-center mb-4">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Temporizador Dojo</h4>
+        <div className="flex gap-1">
+           <button onClick={() => switchMode('FOCUS')} className={`px-2 py-0.5 text-[10px] rounded ${mode === 'FOCUS' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Focus</button>
+           <button onClick={() => switchMode('BREAK')} className={`px-2 py-0.5 text-[10px] rounded ${mode === 'BREAK' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Descanso</button>
+        </div>
+      </div>
+      <div className="text-4xl font-mono font-bold text-center mb-4 tracking-widest text-white">
+        {formatTime(timeLeft)}
+      </div>
+      <div className="flex gap-2">
+        <button onClick={toggleTimer} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${isActive ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}>
+          {isActive ? 'Pausa' : 'Iniciar'}
+        </button>
+        <button onClick={resetTimer} className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">
+          <RotateCw size={16} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// 2. AI CHAT
+const DojoChat = () => {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto space-y-4 p-1">
+        <div className="flex items-start gap-2">
+           <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs"><Sparkles size={12}/></div>
+           <div className="bg-indigo-50 p-2 rounded-lg rounded-tl-none text-xs text-slate-700 border border-indigo-100">
+             Hola, soy tu Sensei AI. Estoy analizando el contenido de este nodo de HTML. ¿Tienes dudas sobre las etiquetas semánticas?
+           </div>
+        </div>
+      </div>
+      <div className="mt-2 border-t pt-2">
+        <div className="relative">
+          <input type="text" placeholder="Pregunta algo..." className="w-full text-xs bg-slate-50 border border-gray-200 rounded-lg pl-3 pr-8 py-2 focus:ring-1 focus:ring-indigo-500 outline-none" />
+          <button className="absolute right-2 top-1.5 text-indigo-500 hover:text-indigo-600"><ArrowLeft size={14} className="rotate-180" /></button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 3. RESOURCE ITEM
 const ResourceItem: React.FC<{ item: DojoResource; onNavigate: (page: PageView) => void }> = ({ item, onNavigate }) => {
   const handleClick = () => {
     if (item.status === 'COMPLETED') {
-      // Logic: If completed, "Repasar" goes to Review Page
       onNavigate('REVIEW');
     } else {
-      // Logic: Open resource (Mock)
       alert(`Abriendo recurso externo: ${item.title}`);
     }
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all group">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${item.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
-          {item.type === 'VIDEO' ? <Video size={20} /> : item.type === 'ARTICLE' ? <FileText size={20} /> : <Book size={20} />}
+    <div className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg hover:border-indigo-100 hover:shadow-sm transition-all group">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-md ${item.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'}`}>
+          {item.type === 'VIDEO' ? <Video size={16} /> : item.type === 'ARTICLE' ? <FileText size={16} /> : <Book size={16} />}
         </div>
         <div>
-          <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+          <h4 className="font-medium text-sm text-gray-900 leading-tight">
             {item.title}
-            {item.isOfficial && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">Oficial</span>}
+            {item.isOfficial && <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-1 py-px rounded border border-slate-200">Oficial</span>}
           </h4>
-          <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-            <span className="flex items-center gap-1"><Clock size={12}/> {item.duration}</span>
-            {item.status === 'IN_PROGRESS' && <span className="text-amber-600 font-medium">En progreso (60%)</span>}
+          <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+            <span className="flex items-center gap-0.5"><Clock size={10}/> {item.duration}</span>
+            {item.status === 'IN_PROGRESS' && <span className="text-amber-600 font-bold">En progreso</span>}
           </div>
         </div>
       </div>
       <button 
         onClick={handleClick}
-        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${item.status === 'COMPLETED' ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${item.status === 'COMPLETED' ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:text-indigo-600'}`}
       >
         {item.status === 'COMPLETED' ? 'Repasar' : 'Abrir'}
       </button>
@@ -51,445 +134,380 @@ const ResourceItem: React.FC<{ item: DojoResource; onNavigate: (page: PageView) 
   );
 };
 
-const QuizItem: React.FC<{ item: DojoQuiz }> = ({ item }) => (
-  <div className={`p-5 rounded-xl border relative overflow-hidden group ${item.isBossFight ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 text-white' : 'bg-white border-gray-100 hover:border-indigo-100'}`}>
-    {item.isBossFight && <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-10">BOSS FIGHT</div>}
-    
-    <div className="flex justify-between items-start relative z-10">
-      <div className="flex items-start gap-4">
-        <div className={`p-3 rounded-lg ${item.isBossFight ? 'bg-red-500/20 text-red-400' : 'bg-amber-50 text-amber-600'}`}>
-          {item.isBossFight ? <Trophy size={24} /> : <HelpCircle size={24} />}
-        </div>
-        <div>
-          <h4 className={`font-bold text-lg ${item.isBossFight ? 'text-white' : 'text-gray-900'}`}>{item.title}</h4>
-          <div className={`flex items-center gap-3 text-sm mt-1 ${item.isBossFight ? 'text-slate-400' : 'text-gray-500'}`}>
-            <span>{item.questionCount} preguntas</span>
-            <span>•</span>
-            <span>{item.estimatedTime}</span>
-          </div>
-          {item.bestScore && (
-            <div className="mt-2 text-xs font-bold text-green-500 bg-green-500/10 inline-block px-2 py-1 rounded">
-              Mejor nota: {item.bestScore}%
-            </div>
-          )}
-        </div>
-      </div>
-      <button className={`px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg transition-transform active:scale-95 ${item.isBossFight ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}>
-        {item.status === 'COMPLETED' ? 'Repetir' : 'Empezar'}
-      </button>
-    </div>
-  </div>
-);
+// --- MAIN PAGE ---
 
 const DojoPage: React.FC<DojoPageProps> = ({ onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('SUMMARY');
+  const [activeStep, setActiveStep] = useState<StepType>('SUMMARY');
+  const [activeTool, setActiveTool] = useState<ToolType>('NOTES');
+  const [showTools, setShowTools] = useState(true);
+  const [focusMode, setFocusMode] = useState(false);
 
-  // --- CONTENT RENDERING ---
+  // --- CONTENT RENDERERS ---
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'SUMMARY':
-        return (
-          <div className="space-y-8 animate-fade-in">
-            {/* Why it matters */}
-            <section>
-              <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <BrainCircuit className="text-indigo-500" /> ¿Qué vas a aprender?
-              </h3>
-              <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100 text-gray-700 leading-relaxed">
-                <p className="mb-4">
-                  Al terminar este nodo sabrás estructurar una página web básica con HTML5, usar las etiquetas semánticas esenciales y entender la jerarquía del DOM.
+  const renderSummary = () => (
+    <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-12">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-8 text-white shadow-xl">
+           <div className="flex items-start justify-between">
+              <div>
+                 <div className="flex items-center gap-2 text-indigo-200 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-widest border border-indigo-400/30 px-2 py-0.5 rounded">Objetivo del Nodo</span>
+                 </div>
+                 <h2 className="text-3xl font-bold mb-4">Dominando la Estructura Web</h2>
+                 <p className="text-indigo-100 leading-relaxed max-w-xl">
+                    Al terminar este nodo sabrás estructurar una página web básica con HTML5, usar las etiquetas semánticas esenciales y entender la jerarquía del DOM.
+                 </p>
+              </div>
+              <div className="hidden md:block">
+                 <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
+                    <div className="text-center">
+                       <div className="text-3xl font-bold">150</div>
+                       <div className="text-xs uppercase tracking-wide opacity-80">XP Reward</div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        <section>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <BrainCircuit className="text-indigo-500" /> Conceptos Clave
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4">
+             {['Etiquetas Semánticas', 'Estructura DOM', 'Atributos & Metadatos'].map((c,i) => (
+               <div key={i} className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:border-indigo-300 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 mb-3 font-bold">{i+1}</div>
+                  <h4 className="font-semibold text-gray-800">{c}</h4>
+               </div>
+             ))}
+          </div>
+        </section>
+
+        <section className="bg-white border border-gray-200 rounded-xl p-6">
+          <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wide text-gray-400">Por qué importa</h3>
+          <p className="text-gray-600">
+            Es la base de todo lo que harás en frontend. Sin un HTML sólido, tus estilos CSS se romperán y tu JavaScript será difícil de mantener. Es el esqueleto de la web.
+          </p>
+          <div className="mt-6 flex justify-center">
+             <button onClick={() => setActiveStep('LEARN')} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-transform active:scale-95 flex items-center gap-2">
+                <Play fill="currentColor" size={18} /> Comenzar Lección
+             </button>
+          </div>
+        </section>
+    </div>
+  );
+
+  const renderLearn = () => (
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in pb-12">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Material de Estudio</h2>
+        <span className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2 py-1 rounded">2/4 Completados</span>
+      </div>
+
+      <div className="space-y-3">
+        {MOCK_DOJO_RESOURCES.map(r => (
+          <ResourceItem key={r.id} item={r} onNavigate={onNavigate} />
+        ))}
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mt-8">
+        <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><Plus size={18}/> Material Externo</h3>
+        <p className="text-sm text-gray-500 mb-4">Añade documentación o videos que encuentres útiles.</p>
+        <button className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-indigo-400 hover:text-indigo-600 transition-colors">
+           Pegar enlace aquí...
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderPractice = () => (
+    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
+       <div className="grid md:grid-cols-2 gap-6">
+          {/* Quiz Section */}
+          <div className="space-y-4">
+             <h3 className="font-bold text-gray-900 flex items-center gap-2"><HelpCircle size={20} className="text-amber-500"/> Quizzes</h3>
+             {MOCK_DOJO_QUIZZES.map(q => (
+               <div key={q.id} className={`p-4 rounded-xl border cursor-pointer transition-all hover:scale-[1.02] ${q.isBossFight ? 'bg-slate-900 border-slate-700 text-white shadow-xl' : 'bg-white border-gray-200 hover:border-indigo-300 shadow-sm'}`}>
+                  <div className="flex justify-between items-start mb-2">
+                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${q.isBossFight ? 'bg-red-500 text-white' : 'bg-green-100 text-green-700'}`}>
+                        {q.isBossFight ? 'BOSS FIGHT' : 'QUIZ'}
+                     </span>
+                     {q.status === 'COMPLETED' && <CheckCircle2 size={16} className="text-green-500"/>}
+                  </div>
+                  <h4 className="font-bold mb-1">{q.title}</h4>
+                  <p className={`text-xs ${q.isBossFight ? 'text-slate-400' : 'text-gray-500'}`}>{q.questionCount} preguntas • {q.estimatedTime}</p>
+               </div>
+             ))}
+          </div>
+
+          {/* Code Challenge */}
+          <div className="space-y-4">
+             <h3 className="font-bold text-gray-900 flex items-center gap-2"><Code size={20} className="text-indigo-500"/> Reto de Código</h3>
+             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                   Crea un archivo HTML con un título <code>&lt;h1&gt;</code>, un párrafo introductorio y una lista desordenada de tus 3 frutas favoritas.
                 </p>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm"><CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0"/> Etiquetas básicas: &lt;html&gt;, &lt;head&gt;, &lt;body&gt;...</li>
-                  <li className="flex items-start gap-2 text-sm"><CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0"/> Listas, enlaces e imágenes optimizadas.</li>
-                  <li className="flex items-start gap-2 text-sm"><CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0"/> Buenas prácticas de estructura y SEO básico.</li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Why important */}
-            <section>
-              <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wide text-gray-400">Por qué importa</h3>
-              <p className="text-gray-600 text-sm">
-                Es la base de todo lo que harás en frontend. Sin un HTML sólido, tus estilos CSS se romperán y tu JavaScript será difícil de mantener. Es el esqueleto de la web.
-              </p>
-            </section>
-
-            {/* Path visualization */}
-            <section className="border-t border-gray-100 pt-6">
-              <h3 className="text-sm font-bold text-gray-900 mb-4">Ruta de Conocimiento</h3>
-              <div className="flex items-center gap-4 text-sm overflow-x-auto pb-2">
-                <div className="flex items-center gap-2 opacity-50">
-                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600"><CheckCircle2 size={14}/></div>
-                  <span className="whitespace-nowrap">Intro Web</span>
+                <div className="bg-slate-900 rounded-lg p-3 font-mono text-xs text-green-400 mb-4 overflow-x-auto">
+                   &lt;h1&gt;Hola Mundo&lt;/h1&gt;<br/>
+                   &lt;p&gt;Este es mi primer sitio&lt;/p&gt;<br/>
+                   &lt;ul&gt;...&lt;/ul&gt;
                 </div>
-                <div className="w-8 h-px bg-gray-300"></div>
-                <div className="flex items-center gap-2 font-bold text-indigo-600">
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-indigo-500 text-indigo-700">2</div>
-                  <span className="whitespace-nowrap">HTML Básico</span>
-                </div>
-                <div className="w-8 h-px bg-gray-300"></div>
-                <div className="flex items-center gap-2 text-gray-400">
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200"><Lock size={12}/></div>
-                  <span className="whitespace-nowrap">HTML Semántico</span>
-                </div>
-              </div>
-            </section>
-
-            {/* Action */}
-            <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-200 mt-8">
-              <p className="text-gray-600 mb-4 text-sm">Llevas el 60% de esta habilidad. Te recomendamos seguir con la guía práctica.</p>
-              <button className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto">
-                <Play fill="currentColor" size={18} /> Continuar Aprendiendo
-              </button>
-            </div>
+                <button className="w-full bg-indigo-50 text-indigo-700 font-bold py-2 rounded-lg hover:bg-indigo-100 transition-colors">
+                   Abrir Editor
+                </button>
+             </div>
           </div>
-        );
-      
-      case 'LEARN':
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold text-gray-900">Camino Recomendado</h3>
-              <span className="text-xs text-gray-500">2 de 4 completados</span>
-            </div>
-            
-            <div className="space-y-3">
-              {MOCK_DOJO_RESOURCES.map(r => (
-                <ResourceItem key={r.id} item={r} onNavigate={onNavigate} />
-              ))}
-            </div>
+       </div>
+    </div>
+  );
 
-            <div className="pt-6 border-t border-gray-100">
-              <h3 className="font-bold text-gray-900 mb-4">Añadir Recurso</h3>
-              <button className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex flex-col items-center justify-center gap-2">
-                <Plus size={24} />
-                <span className="text-sm font-medium">Pegar enlace o subir PDF</span>
-              </button>
-            </div>
-          </div>
-        );
-
-      case 'PRACTICE':
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div>
-               <h3 className="font-bold text-gray-900 mb-4">Quizzes y Exámenes</h3>
-               <div className="space-y-4">
-                 {MOCK_DOJO_QUIZZES.map(q => <QuizItem key={q.id} item={q} />)}
+  const renderProjects = () => (
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in pb-12">
+       {MOCK_DOJO_PROJECTS.map(project => (
+         <div key={project.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-start">
+               <div>
+                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100 mb-2 inline-block">PROYECTO FINAL</span>
+                  <h3 className="text-xl font-bold text-gray-900 mt-1">{project.title}</h3>
+                  <p className="text-gray-600 mt-2 text-sm leading-relaxed">{project.description}</p>
+               </div>
+               <div className="bg-slate-100 p-3 rounded-lg text-slate-400">
+                  <Trophy size={24} />
                </div>
             </div>
 
-            <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100 mt-8">
-              <div className="flex items-start gap-4">
-                <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600">
-                  <PenTool size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900">Reto Rápido de Código</h4>
-                  <p className="text-sm text-gray-600 mt-1 mb-3">
-                    Crea un archivo HTML con un título <code>&lt;h1&gt;</code>, un párrafo y una lista de 3 frutas favoritas.
-                  </p>
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Pega tu link de CodePen / Gist..." className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2" />
-                    <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Validar</button>
-                  </div>
-                </div>
-              </div>
+            <div className="mt-6 bg-slate-50 rounded-lg p-4 border border-slate-100">
+               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Checklist de Entrega</h4>
+               <div className="space-y-2">
+                 {project.checklist.map(item => (
+                   <label key={item.id} className="flex items-center gap-3 cursor-pointer p-1.5 hover:bg-white rounded transition-colors">
+                     <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                     <span className="text-sm text-gray-700">{item.text}</span>
+                   </label>
+                 ))}
+               </div>
             </div>
-          </div>
-        );
 
-      case 'PROJECTS':
-        return (
-          <div className="space-y-6 animate-fade-in">
-            {MOCK_DOJO_PROJECTS.map(project => (
-              <div key={project.id} className="border border-gray-200 rounded-xl p-6 bg-white">
-                <div className="flex justify-between items-start mb-4">
-                   <div>
-                     <h3 className="font-bold text-lg text-gray-900">{project.title}</h3>
-                     <p className="text-sm text-gray-600 mt-1">{project.description}</p>
-                   </div>
-                   <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-100">PROYECTO</span>
-                </div>
+            <div className="flex justify-end gap-3 mt-6">
+               <button className="text-gray-500 hover:text-gray-700 text-sm font-medium px-4 py-2">Ver Ejemplo</button>
+               <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 py-2 rounded-lg shadow-sm">
+                 Subir Solución
+               </button>
+            </div>
+         </div>
+       ))}
+    </div>
+  );
 
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Criterios de éxito</h4>
-                  <div className="space-y-2">
-                    {project.checklist.map(item => (
-                      <label key={item.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-1 rounded">
-                        <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span className="text-sm text-gray-700">{item.text}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3">
-                   <button className="text-gray-500 hover:text-gray-700 text-sm font-medium px-4 py-2">Guardar borrador</button>
-                   <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-6 py-2 rounded-lg shadow-sm">
-                     Entregar Proyecto
-                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-
+  const renderToolContent = () => {
+    switch(activeTool) {
       case 'NOTES':
         return (
-          <div className="h-full flex flex-col animate-fade-in">
-             <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-900">Mi Cuaderno</h3>
-                <button className="flex items-center gap-2 text-indigo-600 text-sm font-medium hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-                  <Sparkles size={14} /> Resumir con IA
-                </button>
+          <div className="h-full flex flex-col">
+             <div className="p-4 border-b border-gray-100 bg-yellow-50/30 flex justify-between items-center">
+                <span className="font-bold text-xs uppercase tracking-wider text-yellow-700">Cuaderno</span>
+                <button className="text-yellow-600 hover:text-yellow-700"><Sparkles size={14}/></button>
              </div>
-             <div className="flex-1 bg-yellow-50/50 border border-yellow-200 rounded-xl p-4 shadow-sm relative">
-                <textarea 
-                  className="w-full h-full bg-transparent border-none resize-none focus:ring-0 text-gray-700 text-sm font-mono leading-relaxed"
-                  defaultValue={MOCK_DOJO_NOTES}
-                ></textarea>
-                <div className="absolute bottom-4 right-4 text-xs text-yellow-600/50">Markdown soportado</div>
+             <textarea
+               className="flex-1 p-4 bg-transparent resize-none focus:outline-none text-sm text-gray-700 font-mono leading-relaxed"
+               defaultValue={MOCK_DOJO_NOTES}
+               placeholder="Escribe tus notas aquí (Markdown soportado)..."
+             ></textarea>
+          </div>
+        );
+      case 'CHAT':
+        return (
+          <div className="h-full flex flex-col bg-slate-50">
+             <div className="p-4 border-b border-gray-200 bg-white">
+                <span className="font-bold text-xs uppercase tracking-wider text-indigo-600">Sensei AI</span>
+             </div>
+             <div className="flex-1 p-4">
+               <DojoChat />
              </div>
           </div>
         );
-
-      case 'HISTORY':
-        return (
-          <div className="animate-fade-in">
-            <h3 className="font-bold text-gray-900 mb-6">Actividad en este nodo</h3>
-            <div className="relative border-l border-gray-200 ml-3 space-y-6 pb-4">
-              {MOCK_DOJO_HISTORY.map((h, i) => (
-                <div key={h.id} className="relative pl-6">
-                  <div className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full border-2 border-white ${i === 0 ? 'bg-indigo-500' : 'bg-gray-300'}`}></div>
-                  <p className="text-sm text-gray-800 font-medium">{h.action}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{h.timestamp}</p>
+      case 'TIMER':
+         return (
+           <div className="p-4">
+             <DojoTimer />
+             <div className="mt-6">
+                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Historial de Sesión</h5>
+                <div className="text-sm text-gray-500 flex justify-between border-b border-gray-100 py-2">
+                   <span>Estudio Profundo</span>
+                   <span>25 min</span>
                 </div>
-              ))}
-            </div>
+                <div className="text-sm text-gray-500 flex justify-between border-b border-gray-100 py-2">
+                   <span>Descanso</span>
+                   <span>5 min</span>
+                </div>
+             </div>
+           </div>
+         );
+      case 'INFO':
+        return (
+          <div className="p-4 space-y-6">
+             <div>
+                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Detalles</h5>
+                <div className="space-y-3">
+                   <div className="flex justify-between text-sm"><span className="text-gray-500">Nivel</span> <span className="font-medium">Principiante</span></div>
+                   <div className="flex justify-between text-sm"><span className="text-gray-500">XP</span> <span className="font-medium text-indigo-600">150 XP</span></div>
+                   <div className="flex justify-between text-sm"><span className="text-gray-500">Tiempo</span> <span className="font-medium">45m</span></div>
+                </div>
+             </div>
+             <div>
+               <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Requisitos</h5>
+               <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded">
+                     <CheckCircle2 size={14}/> <span>Intro Web</span>
+                  </div>
+               </div>
+             </div>
           </div>
         );
-      
-      case 'REVIEW':
-        return (
-            <div className="animate-fade-in space-y-6">
-                <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-gray-900">Mantenimiento de Habilidad</h3>
-                    <span className="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded border border-amber-100">Riesgo Bajo</span>
-                </div>
-
-                <div className="bg-gradient-to-br from-slate-900 to-indigo-900 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
-                    {/* Decor */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10 blur-xl"></div>
-                    
-                    <div className="relative z-10 text-center">
-                        <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-full mb-4 ring-1 ring-white/20">
-                            <RotateCw size={24} className="text-emerald-400" />
-                        </div>
-                        <h4 className="text-2xl font-bold mb-1">5 Tarjetas Pendientes</h4>
-                        <p className="text-indigo-200 text-sm mb-6">Repasar ahora te dará +25 XP</p>
-
-                        <button 
-                            onClick={() => onNavigate('REVIEW')}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-emerald-900/20 transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto"
-                        >
-                            <Layers size={18} /> Empezar Sesión
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-                         <span className="block text-2xl font-bold text-gray-900">85%</span>
-                         <span className="text-xs text-gray-500 uppercase tracking-wide">Retención</span>
-                     </div>
-                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-                         <span className="block text-2xl font-bold text-gray-900">2d</span>
-                         <span className="text-xs text-gray-500 uppercase tracking-wide">Próx. Decadencia</span>
-                     </div>
-                </div>
-            </div>
-        );
-      
       default: return null;
     }
   };
 
-  // --- MAIN RENDER ---
+  // --- LAYOUT ---
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      
-      {/* 1. HEADER */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-6">
+    <div className={`transition-all duration-300 ${focusMode ? 'fixed inset-0 z-50 bg-slate-50 flex flex-col' : 'min-h-screen flex flex-col bg-slate-50'}`}>
+
+       {/* COMMAND BAR (Header) */}
+       <header className={`bg-white border-b border-gray-200 flex items-center justify-between px-4 h-16 shrink-0 ${focusMode ? 'shadow-sm' : 'sticky top-0 z-40'}`}>
           <div className="flex items-center gap-4">
-             <button onClick={() => onNavigate('SKILL_TREE')} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+             <button onClick={() => onNavigate('SKILL_TREE')} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
                <ArrowLeft size={20} />
              </button>
-             <div>
-               <div className="flex items-center gap-2 text-xs text-gray-500 mb-0.5">
-                  <span>Programación</span>
-                  <ChevronRight size={12} />
-                  <span>Frontend</span>
-                  <ChevronRight size={12} />
-                  <span>HTML</span>
-               </div>
-               <h1 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                 Fundamentos de HTML 
-                 <span className="text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">En Progreso</span>
-               </h1>
+             <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">HTML / Nivel 1</span>
+                <h1 className="text-sm md:text-base font-bold text-gray-900 truncate max-w-[200px] md:max-w-md">Fundamentos de Estructura</h1>
              </div>
           </div>
 
-          {/* Progress Section */}
-          <div className="hidden md:flex flex-col w-64">
-            <div className="flex justify-between text-xs font-medium text-gray-600 mb-1.5">
-               <span>Progreso del nodo</span>
-               <span>60%</span>
-            </div>
-            <div className="h-2 w-full bg-gray-100 rounded-full flex overflow-hidden">
-               <div className="w-[40%] bg-indigo-500"></div> {/* Theory */}
-               <div className="w-[15%] bg-amber-400"></div> {/* Practice */}
-               <div className="w-[5%] bg-green-500"></div> {/* Quiz */}
-            </div>
-            <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-               <span>Estudio</span>
-               <span>Práctica</span>
-               <span>Quiz</span>
-            </div>
+          <div className="flex items-center gap-2 md:gap-4">
+             {/* Progress Mini */}
+             <div className="hidden md:flex flex-col w-32">
+                <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                   <span>Progreso</span>
+                   <span>60%</span>
+                </div>
+                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                   <div className="w-[60%] bg-indigo-600 h-full"></div>
+                </div>
+             </div>
+
+             <div className="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
+
+             {/* Focus Toggle */}
+             <button
+               onClick={() => setFocusMode(!focusMode)}
+               className={`p-2 rounded-lg transition-colors ${focusMode ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100 text-gray-500'}`}
+               title="Modo Focus"
+             >
+               {focusMode ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+             </button>
+
+             {/* Tools Toggle */}
+             <button
+               onClick={() => setShowTools(!showTools)}
+               className={`p-2 rounded-lg transition-colors md:hidden ${showTools ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100 text-gray-500'}`}
+             >
+               {showTools ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+             </button>
           </div>
+       </header>
 
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2">
-            <Play fill="currentColor" size={16} /> Continuar
-          </button>
-        </div>
-      </header>
+       {/* WORKSPACE */}
+       <div className="flex-1 flex overflow-hidden">
 
-      {/* 2. MAIN CONTENT AREA */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* LEFT COLUMN: TABS & CONTENT */}
-        <div className="lg:col-span-8 flex flex-col">
-           {/* Navigation Tabs */}
-           <div className="flex items-center gap-1 border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
-              {[
-                { id: 'SUMMARY', label: 'Resumen' },
-                { id: 'LEARN', label: 'Aprender' },
-                { id: 'PRACTICE', label: 'Practicar' },
-                { id: 'PROJECTS', label: 'Proyectos' },
-                { id: 'REVIEW', label: 'Repaso' },
-                { id: 'NOTES', label: 'Notas' },
-                { id: 'HISTORY', label: 'Historial' },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id 
-                      ? 'border-indigo-600 text-indigo-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-           </div>
+          {/* 1. STEP NAVIGATION (Left Sidebar) */}
+          <nav className="w-20 md:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
+             <div className="p-4 overflow-y-auto flex-1 space-y-2">
+                <p className="hidden md:block text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Ruta de Lección</p>
 
-           {/* Tab Content Container */}
-           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 min-h-[500px]">
-             {renderContent()}
-           </div>
-        </div>
+                {[
+                  { id: 'SUMMARY', label: 'Resumen', icon: BrainCircuit },
+                  { id: 'LEARN', label: 'Aprender', icon: Book },
+                  { id: 'PRACTICE', label: 'Practicar', icon: Code },
+                  { id: 'PROJECTS', label: 'Proyecto', icon: Trophy },
+                  { id: 'REVIEW', label: 'Repaso', icon: RotateCw },
+                ].map(step => (
+                  <button
+                    key={step.id}
+                    onClick={() => setActiveStep(step.id as StepType)}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
+                      activeStep === step.id
+                        ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <step.icon size={20} className={activeStep === step.id ? 'text-indigo-600' : 'text-gray-400'} />
+                    <span className="hidden md:block text-sm font-medium">{step.label}</span>
+                    {activeStep === step.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500 hidden md:block"></div>}
+                  </button>
+                ))}
+             </div>
 
-        {/* RIGHT COLUMN: CONTEXT SIDEBAR */}
-        <div className="lg:col-span-4 space-y-6">
-           
-           {/* Node Badges */}
-           <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Información</h3>
-              <div className="space-y-3">
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Dificultad</span>
-                    <span className="font-medium text-gray-900">Nivel 1 • Básico</span>
-                 </div>
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Tipo</span>
-                    <span className="font-medium text-gray-900">Teórico + Práctico</span>
-                 </div>
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Tiempo est.</span>
-                    <span className="font-medium text-gray-900">45 - 60 min</span>
-                 </div>
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">XP Recompensa</span>
-                    <span className="font-medium text-indigo-600">+150 XP</span>
-                 </div>
-              </div>
-           </div>
+             {/* Bottom Action */}
+             <div className="p-4 border-t border-gray-100 hidden md:block">
+               <button className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl text-sm font-bold shadow-lg transition-transform active:scale-95">
+                 Completar Nodo
+               </button>
+             </div>
+          </nav>
 
-           {/* Prerequisites */}
-           <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Prerequisitos</h3>
-              <div className="space-y-2">
-                 <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-gray-100">
-                    <div className="flex items-center gap-2">
-                       <CheckCircle2 size={16} className="text-green-500" />
-                       <span className="text-sm text-gray-700">Intro a la Web</span>
-                    </div>
+          {/* 2. MAIN CONTENT (Center) */}
+          <main className="flex-1 overflow-y-auto bg-slate-50/50 relative scroll-smooth">
+             <div className="max-w-5xl mx-auto px-4 py-8 md:px-8">
+               {activeStep === 'SUMMARY' && renderSummary()}
+               {activeStep === 'LEARN' && renderLearn()}
+               {activeStep === 'PRACTICE' && renderPractice()}
+               {activeStep === 'PROJECTS' && renderProjects()}
+               {activeStep === 'REVIEW' && (
+                 <div className="text-center py-20">
+                   <div className="inline-flex bg-white p-4 rounded-full shadow-sm mb-4"><RotateCw size={32} className="text-indigo-500"/></div>
+                   <h2 className="text-xl font-bold text-gray-900">Sección de Repaso</h2>
+                   <p className="text-gray-500 mt-2">Próximamente disponible.</p>
                  </div>
-                 <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-gray-100">
-                    <div className="flex items-center gap-2">
-                       <CheckCircle2 size={16} className="text-green-500" />
-                       <span className="text-sm text-gray-700">Cómo funciona internet</span>
-                    </div>
-                 </div>
-              </div>
-           </div>
+               )}
+             </div>
+          </main>
 
-           {/* Next Steps (Children) */}
-           <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Desbloquea</h3>
-              <div className="space-y-2">
-                 <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg opacity-75">
-                    <Lock size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-600 font-medium">HTML Semántico</span>
-                 </div>
-                 <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg opacity-75">
-                    <Lock size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-600 font-medium">Formularios</span>
-                 </div>
-                 <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg opacity-75">
-                    <Lock size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-600 font-medium">Accesibilidad (A11y)</span>
-                 </div>
-              </div>
-           </div>
+          {/* 3. TOOLS PANEL (Right Sidebar) */}
+          {showTools && (
+            <aside className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 shadow-xl md:shadow-none absolute md:relative right-0 h-full z-20">
+               {/* Tool Tabs */}
+               <div className="flex border-b border-gray-200">
+                  {[
+                    { id: 'NOTES', icon: PenTool, label: 'Notas' },
+                    { id: 'CHAT', icon: MessageSquare, label: 'Chat' },
+                    { id: 'TIMER', icon: Timer, label: 'Timer' },
+                    { id: 'INFO', icon: Star, label: 'Info' },
+                  ].map(tool => (
+                    <button
+                      key={tool.id}
+                      onClick={() => setActiveTool(tool.id as ToolType)}
+                      className={`flex-1 py-3 flex justify-center items-center border-b-2 transition-colors ${
+                        activeTool === tool.id
+                          ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                          : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                      }`}
+                      title={tool.label}
+                    >
+                      <tool.icon size={18} />
+                    </button>
+                  ))}
+               </div>
 
-           {/* Goal Impact */}
-           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-5 text-white shadow-md">
-              <div className="flex items-start gap-3">
-                 <Target className="mt-1 opacity-80" size={20} />
-                 <div>
-                    <h4 className="font-bold text-sm">Impacto en Objetivo</h4>
-                    <p className="text-xs text-indigo-100 mt-1 leading-relaxed">
-                       Completar este nodo aporta un <strong className="text-white">3%</strong> a tu objetivo "Fullstack Junior".
-                    </p>
-                 </div>
-              </div>
-           </div>
-
-        </div>
-      </div>
+               {/* Tool Content */}
+               <div className="flex-1 overflow-y-auto">
+                 {renderToolContent()}
+               </div>
+            </aside>
+          )}
+       </div>
     </div>
   );
 };
-
-// Simple internal icon component for context
-const Target = ({size, className}: {size: number, className?: string}) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-);
 
 export default DojoPage;
