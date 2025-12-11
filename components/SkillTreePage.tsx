@@ -3,9 +3,10 @@ import {
   Search, Target, Filter, MousePointer2, Plus, Minus, 
   Map as MapIcon, X, CheckCircle2, Play, Cpu, Anchor, Palette
 } from 'lucide-react';
-import { MOCK_SKILL_NODES, MOCK_SKILL_LINKS, MOCK_GOAL } from '../constants';
+import { MOCK_GOAL, SKILL_TREES_DATA, AVAILABLE_TREES } from '../constants';
 import { SkillNode, CameraState, NodeStatus, PageView } from '../types';
 import { ThemeType, ThemeConfig } from './skill-tree/types';
+import SkillTreeSelector from './skill-tree/SkillTreeSelector';
 
 // Original Themes
 import { COSMIC_THEME, CosmicBackground, CosmicNode } from './skill-tree/themes/Cosmic';
@@ -73,6 +74,7 @@ const Clock = ({size, className}: {size: number, className?: string}) => (
 const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeTheme, setActiveTheme] = useState<ThemeType>('COSMIC');
+  const [activeTreeId, setActiveTreeId] = useState<string>('fullstack');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   
   const [camera, setCamera] = useState<CameraState>({ x: -200, y: -100, zoom: 1 });
@@ -84,6 +86,11 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const theme = THEMES[activeTheme];
   const BackgroundComponent = BACKGROUND_COMPONENTS[activeTheme];
   const NodeComponent = NODE_COMPONENTS[activeTheme];
+
+  // Get current tree data
+  const currentTreeData = SKILL_TREES_DATA[activeTreeId] || SKILL_TREES_DATA['fullstack'];
+  const currentNodes = currentTreeData.nodes;
+  const currentLinks = currentTreeData.links;
 
   // --- INTERACTION HANDLERS ---
 
@@ -118,7 +125,7 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   };
 
   const centerOnNode = (nodeId: string) => {
-    const node = MOCK_SKILL_NODES.find(n => n.id === nodeId);
+    const node = currentNodes.find(n => n.id === nodeId);
     if (node && containerRef.current) {
       const centerX = containerRef.current.clientWidth / 2;
       const centerY = containerRef.current.clientHeight / 2;
@@ -222,6 +229,15 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
 
         {/* Controls */}
         <div className="pointer-events-auto flex items-center gap-3">
+
+          {/* SKILL TREE SELECTOR */}
+          <SkillTreeSelector
+            currentTreeId={activeTreeId}
+            onSelectTree={setActiveTreeId}
+            trees={AVAILABLE_TREES}
+            theme={theme}
+          />
+
           {/* THEME SELECTOR */}
           <div className="relative">
               <button 
@@ -256,7 +272,11 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
           </button>
           
           <button 
-            onClick={() => centerOnNode('dom-manipulation')}
+            onClick={() => {
+                // Find a node to center on, preferably the first one or a specific one
+                const firstNode = currentNodes[0];
+                if (firstNode) centerOnNode(firstNode.id);
+            }}
             className={`flex items-center gap-2 px-6 py-3 font-bold border border-transparent rounded-xl transition-all active:scale-95 shadow-lg group ${theme.panelClass} ${theme.buttonClass}`}
           >
             <MousePointer2 size={18} className="group-hover:rotate-12 transition-transform" /> 
@@ -288,9 +308,9 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
                 <stop offset="100%" stopColor={theme.lineBaseColor} stopOpacity="0.1" />
               </linearGradient>
             </defs>
-            {MOCK_SKILL_LINKS.map((link, i) => {
-              const source = MOCK_SKILL_NODES.find(n => n.id === link.source);
-              const target = MOCK_SKILL_NODES.find(n => n.id === link.target);
+            {currentLinks.map((link, i) => {
+              const source = currentNodes.find(n => n.id === link.source);
+              const target = currentNodes.find(n => n.id === link.target);
               if (!source || !target) return null;
               
               const isFlowing = target.status === NodeStatus.IN_PROGRESS;
@@ -325,7 +345,7 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
           </svg>
 
           {/* NODES */}
-          {MOCK_SKILL_NODES.map(node => {
+          {currentNodes.map(node => {
             const status = node.status;
             return (
                 <div
@@ -435,7 +455,7 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
                  <MapIcon size={10} /> Radar
              </div>
              <div className="w-full h-full relative" style={{ transform: 'scale(0.12)', transformOrigin: 'top left' }}>
-                 {MOCK_SKILL_NODES.map(n => (
+                 {currentNodes.map(n => (
                      <div key={n.id} className={`absolute w-24 h-24 rounded-full ${n.status === 'COMPLETED' ? 'bg-green-500' : 'bg-gray-500'}`} style={{ left: n.x, top: n.y }}></div>
                  ))}
              </div>

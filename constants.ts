@@ -74,7 +74,7 @@ Responde en formato JSON: { "title": "...", "description": "..." }
 
 // --- SKILL TREE DATA ---
 
-export const MOCK_SKILL_NODES: SkillNode[] = [
+const FULLSTACK_NODES: SkillNode[] = [
   // Cluster: Fundamentals
   { id: 'html-basics', x: 400, y: 300, title: 'HTML Básico', description: 'Estructura semántica y etiquetas básicas.', type: NodeType.LESSON, status: NodeStatus.COMPLETED, category: 'PROGRAMMING', level: 1, estimatedTime: '45m', xpReward: 100 },
   { id: 'css-basics', x: 600, y: 300, title: 'CSS Fundamentos', description: 'Selectores, colores y tipografía.', type: NodeType.LESSON, status: NodeStatus.COMPLETED, category: 'PROGRAMMING', level: 1, estimatedTime: '60m', xpReward: 120 },
@@ -97,7 +97,7 @@ export const MOCK_SKILL_NODES: SkillNode[] = [
   { id: 'english-tech', x: 200, y: 600, title: 'Inglés Técnico', description: 'Vocabulario esencial.', type: NodeType.QUIZ, status: NodeStatus.COMPLETED, category: 'LANGUAGES', level: 1, estimatedTime: '30m', xpReward: 80 },
 ];
 
-export const MOCK_SKILL_LINKS: SkillLink[] = [
+const FULLSTACK_LINKS: SkillLink[] = [
   { source: 'html-basics', target: 'css-basics' },
   { source: 'css-basics', target: 'js-syntax' },
   { source: 'html-basics', target: 'git-init' },
@@ -108,6 +108,61 @@ export const MOCK_SKILL_LINKS: SkillLink[] = [
   { source: 'js-syntax', target: 'node-basics' },
   { source: 'node-basics', target: 'express-api' },
 ];
+
+const PYTHON_NODES: SkillNode[] = [
+  // Basics
+  { id: 'py-basics', x: 400, y: 300, title: 'Python Sintaxis', description: 'Tipos de datos, listas y loops.', type: NodeType.LESSON, status: NodeStatus.COMPLETED, category: 'PROGRAMMING', level: 1, estimatedTime: '2h', xpReward: 100 },
+  { id: 'py-functions', x: 600, y: 300, title: 'Funciones', description: 'Args, kwargs y lambdas.', type: NodeType.LESSON, status: NodeStatus.IN_PROGRESS, category: 'PROGRAMMING', level: 1, estimatedTime: '1.5h', xpReward: 120 },
+
+  // Data Structures
+  { id: 'py-datastruct', x: 800, y: 300, title: 'Estructuras de Datos', description: 'Diccionarios, Sets y Tuplas.', type: NodeType.LESSON, status: NodeStatus.AVAILABLE, category: 'CS', level: 2, estimatedTime: '2h', xpReward: 150 },
+
+  // Data Science Stack
+  { id: 'numpy', x: 1000, y: 200, title: 'NumPy', description: 'Cálculo numérico y matrices.', type: NodeType.PROJECT, status: NodeStatus.LOCKED, category: 'PROGRAMMING', level: 2, estimatedTime: '3h', xpReward: 250 },
+  { id: 'pandas', x: 1000, y: 400, title: 'Pandas', description: 'Manipulación de DataFrames.', type: NodeType.LESSON, status: NodeStatus.LOCKED, category: 'PROGRAMMING', level: 2, estimatedTime: '4h', xpReward: 250 },
+
+  // Visualization
+  { id: 'matplotlib', x: 1200, y: 300, title: 'Matplotlib', description: 'Visualización de datos básica.', type: NodeType.PROJECT, status: NodeStatus.LOCKED, category: 'PROGRAMMING', level: 3, estimatedTime: '3h', xpReward: 300 },
+];
+
+const PYTHON_LINKS: SkillLink[] = [
+  { source: 'py-basics', target: 'py-functions' },
+  { source: 'py-functions', target: 'py-datastruct' },
+  { source: 'py-datastruct', target: 'numpy' },
+  { source: 'py-datastruct', target: 'pandas' },
+  { source: 'numpy', target: 'matplotlib' },
+  { source: 'pandas', target: 'matplotlib' },
+];
+
+const MOBILE_NODES: SkillNode[] = [
+    { id: 'dart-basics', x: 400, y: 300, title: 'Dart Fundamentos', description: 'Lenguaje base para Flutter.', type: NodeType.LESSON, status: NodeStatus.COMPLETED, category: 'PROGRAMMING', level: 1, estimatedTime: '2h', xpReward: 100 },
+    { id: 'flutter-widgets', x: 600, y: 300, title: 'Flutter Widgets', description: 'Stateless vs Stateful.', type: NodeType.LESSON, status: NodeStatus.IN_PROGRESS, category: 'PROGRAMMING', level: 1, estimatedTime: '3h', xpReward: 150 },
+    { id: 'flutter-layout', x: 800, y: 300, title: 'Layouts', description: 'Flex, Row, Column, Stack.', type: NodeType.PROJECT, status: NodeStatus.AVAILABLE, category: 'PROGRAMMING', level: 2, estimatedTime: '4h', xpReward: 200 },
+    { id: 'state-mgmt', x: 1000, y: 300, title: 'Gestión de Estado', description: 'Provider, Riverpod, Bloc.', type: NodeType.BOSS, status: NodeStatus.LOCKED, category: 'CS', level: 3, estimatedTime: '6h', xpReward: 500 },
+];
+
+const MOBILE_LINKS: SkillLink[] = [
+    { source: 'dart-basics', target: 'flutter-widgets' },
+    { source: 'flutter-widgets', target: 'flutter-layout' },
+    { source: 'flutter-layout', target: 'state-mgmt' },
+];
+
+export const SKILL_TREES_DATA: Record<string, { nodes: SkillNode[], links: SkillLink[] }> = {
+  'fullstack': { nodes: FULLSTACK_NODES, links: FULLSTACK_LINKS },
+  'python-ds': { nodes: PYTHON_NODES, links: PYTHON_LINKS },
+  'mobile': { nodes: MOBILE_NODES, links: MOBILE_LINKS },
+};
+
+export const AVAILABLE_TREES = [
+  { id: 'fullstack', name: 'Fullstack JS' },
+  { id: 'python-ds', name: 'Python Data Science' },
+  { id: 'mobile', name: 'Mobile Flutter' },
+];
+
+// Backward compatibility
+export const MOCK_SKILL_NODES = SKILL_TREES_DATA['fullstack'].nodes;
+export const MOCK_SKILL_LINKS = SKILL_TREES_DATA['fullstack'].links;
+
 
 // --- DOJO CONTENT (MOCK FOR HTML BASICS) ---
 
