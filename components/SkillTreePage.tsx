@@ -1,12 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Search, Target, Filter, MousePointer2, Plus, Minus, 
   Map as MapIcon, X, CheckCircle2, Play, Cpu, Anchor, Palette
 } from 'lucide-react';
-import { MOCK_GOAL, SKILL_TREES_DATA, AVAILABLE_TREES } from '../constants';
-import { SkillNode, CameraState, NodeStatus, PageView } from '../types';
+import { MOCK_GOAL } from '../constants';
+import { SkillNode, CameraState, NodeStatus, PageView, SkillLink } from '../types';
 import { ThemeType, ThemeConfig } from './skill-tree/types';
 import SkillTreeSelector from './skill-tree/SkillTreeSelector';
+import { fetchSkillTree, fetchAvailableTrees } from '../services/api';
 
 // Original Themes
 import { COSMIC_THEME, CosmicBackground, CosmicNode } from './skill-tree/themes/Cosmic';
@@ -75,6 +76,7 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeTheme, setActiveTheme] = useState<ThemeType>('COSMIC');
   const [activeTreeId, setActiveTreeId] = useState<string>('fullstack');
+  const [availableTrees, setAvailableTrees] = useState<any[]>([]);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   
   const [camera, setCamera] = useState<CameraState>({ x: -200, y: -100, zoom: 1 });
@@ -83,14 +85,23 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [currentNodes, setCurrentNodes] = useState<SkillNode[]>([]);
+  const [currentLinks, setCurrentLinks] = useState<SkillLink[]>([]);
+
   const theme = THEMES[activeTheme];
   const BackgroundComponent = BACKGROUND_COMPONENTS[activeTheme];
   const NodeComponent = NODE_COMPONENTS[activeTheme];
 
-  // Get current tree data
-  const currentTreeData = SKILL_TREES_DATA[activeTreeId] || SKILL_TREES_DATA['fullstack'];
-  const currentNodes = currentTreeData.nodes;
-  const currentLinks = currentTreeData.links;
+  useEffect(() => {
+    fetchAvailableTrees().then(setAvailableTrees).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    fetchSkillTree(activeTreeId).then(data => {
+      setCurrentNodes(data.nodes);
+      setCurrentLinks(data.links);
+    }).catch(console.error);
+  }, [activeTreeId]);
 
   // --- INTERACTION HANDLERS ---
 
@@ -234,7 +245,7 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
           <SkillTreeSelector
             currentTreeId={activeTreeId}
             onSelectTree={setActiveTreeId}
-            trees={AVAILABLE_TREES}
+            trees={availableTrees}
             theme={theme}
           />
 

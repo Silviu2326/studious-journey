@@ -1,8 +1,17 @@
-import React from 'react';
-import { MOCK_ACTIVITY } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { ActivityLog } from '../types';
+import { fetchDashboardData } from '../services/api';
 import { CheckCircle2, PlusCircle, Trophy } from 'lucide-react';
 
 const ActivityTimeline: React.FC = () => {
+  const [activity, setActivity] = useState<ActivityLog[]>([]);
+
+  useEffect(() => {
+    fetchDashboardData().then(data => {
+      setActivity(data.activity);
+    }).catch(err => console.error(err));
+  }, []);
+
   const getIcon = (type: string) => {
     switch (type) {
         case 'COMPLETE': return <CheckCircle2 size={16} className="text-green-500" />;
@@ -16,10 +25,10 @@ const ActivityTimeline: React.FC = () => {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 h-full">
         <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wide">Actividad Reciente</h3>
         <div className="space-y-4">
-            {MOCK_ACTIVITY.map((item, idx) => (
+            {activity.map((item, idx) => (
                 <div key={item.id} className="flex gap-3 relative">
                     {/* Connector Line */}
-                    {idx !== MOCK_ACTIVITY.length - 1 && (
+                    {idx !== activity.length - 1 && (
                         <div className="absolute left-[7px] top-6 bottom-[-20px] w-px bg-gray-100"></div>
                     )}
                     

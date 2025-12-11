@@ -1,8 +1,19 @@
-import React from 'react';
-import { MOCK_GOAL } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { Goal } from '../types';
+import { fetchDashboardData } from '../services/api';
 import { ArrowRight, Map } from 'lucide-react';
 
 const GoalWidget: React.FC = () => {
+  const [goal, setGoal] = useState<Goal | null>(null);
+
+  useEffect(() => {
+    fetchDashboardData().then(data => {
+      setGoal(data.goal);
+    }).catch(err => console.error(err));
+  }, []);
+
+  if (!goal) return <div className="p-4">Cargando...</div>;
+
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
       <div className="flex justify-between items-center mb-4">
@@ -15,13 +26,13 @@ const GoalWidget: React.FC = () => {
       {/* Progress Bar Section */}
       <div className="mb-6">
         <div className="flex justify-between text-sm mb-1">
-          <span className="font-medium text-gray-700">{MOCK_GOAL.progressPercent}% Completado</span>
-          <span className="text-gray-500">{MOCK_GOAL.completedNodes}/{MOCK_GOAL.totalNodes} Nodos</span>
+          <span className="font-medium text-gray-700">{goal.progressPercent}% Completado</span>
+          <span className="text-gray-500">{goal.completedNodes}/{goal.totalNodes} Nodos</span>
         </div>
         <div className="w-full bg-gray-100 rounded-full h-3">
           <div 
             className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500" 
-            style={{ width: `${MOCK_GOAL.progressPercent}%` }}
+            style={{ width: `${goal.progressPercent}%` }}
           ></div>
         </div>
         <div className="mt-2 flex justify-between text-xs">
