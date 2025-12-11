@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { Network, ChevronDown, Check } from 'lucide-react';
 import { ThemeConfig } from './types';
 
+import { Plus } from 'lucide-react';
+
 interface SkillTreeSelectorProps {
   currentTreeId: string;
   onSelectTree: (treeId: string) => void;
+  onNewTree?: () => void;
   trees: { id: string; name: string }[];
   theme: ThemeConfig;
 }
 
-const SkillTreeSelector: React.FC<SkillTreeSelectorProps> = ({ currentTreeId, onSelectTree, trees, theme }) => {
+const SkillTreeSelector: React.FC<SkillTreeSelectorProps> = ({ currentTreeId, onSelectTree, onNewTree, trees, theme }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const currentTree = trees.find(t => t.id === currentTreeId);
@@ -33,7 +36,7 @@ const SkillTreeSelector: React.FC<SkillTreeSelectorProps> = ({ currentTreeId, on
           />
           <div className={`absolute top-full left-0 mt-2 w-64 rounded-xl p-2 z-50 animate-in fade-in slide-in-from-top-2 border-2 border-current shadow-2xl ${theme.panelClass}`}>
              <div className="text-[10px] uppercase font-bold tracking-widest opacity-50 px-3 py-2 border-b border-current/20 mb-2">Árboles de Habilidad</div>
-             <div className="space-y-1">
+             <div className="space-y-1 mb-2">
                {trees.map((tree) => (
                  <button
                    key={tree.id}
@@ -49,6 +52,21 @@ const SkillTreeSelector: React.FC<SkillTreeSelectorProps> = ({ currentTreeId, on
                  </button>
                ))}
              </div>
+
+             {onNewTree && (
+                <div className="pt-2 border-t border-current/20">
+                    <button
+                        onClick={() => {
+                            setIsOpen(false);
+                            onNewTree();
+                        }}
+                        className="w-full text-left px-3 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-white/10 opacity-70 hover:opacity-100 transition-all"
+                    >
+                        <Plus size={14} />
+                        <span>Aprender Nueva Habilidad</span>
+                    </button>
+                </div>
+             )}
           </div>
         </>
       )}
