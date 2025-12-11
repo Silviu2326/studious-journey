@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, CheckCircle2, Clock, Swords, BookOpen, BrainCircuit } from 'lucide-react';
-import { MOCK_MISSIONS } from '../constants';
 import { Mission, PageView } from '../types';
+import { fetchDashboardData } from '../services/api';
 
 interface DailyMissionsProps {
   onNavigate?: (page: PageView) => void;
@@ -10,9 +10,16 @@ interface DailyMissionsProps {
 
 const DailyMissions: React.FC<DailyMissionsProps> = ({ onNavigate }) => {
   const [timeAvailable, setTimeAvailable] = useState<number>(60);
+  const [missions, setMissions] = useState<Mission[]>([]);
+
+  useEffect(() => {
+    fetchDashboardData().then(data => {
+      setMissions(data.missions);
+    }).catch(err => console.error(err));
+  }, []);
   
   // Calculate total estimated time
-  const totalTime = MOCK_MISSIONS.reduce((acc, curr) => acc + curr.durationMin, 0);
+  const totalTime = missions.reduce((acc, curr) => acc + curr.durationMin, 0);
 
   const getIcon = (type: Mission['type']) => {
     switch (type) {
@@ -62,7 +69,7 @@ const DailyMissions: React.FC<DailyMissionsProps> = ({ onNavigate }) => {
       </div>
 
       <div className="space-y-3">
-        {MOCK_MISSIONS.map((mission) => (
+        {missions.map((mission) => (
           <div key={mission.id} className={`border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group ${getBgColor(mission.type)}`}>
             <div className="flex justify-between items-start">
               <div className="flex gap-3">
