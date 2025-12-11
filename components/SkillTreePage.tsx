@@ -4,9 +4,10 @@ import {
   Map as MapIcon, X, CheckCircle2, Play, Cpu, Anchor, Palette
 } from 'lucide-react';
 import { MOCK_GOAL, SKILL_TREES_DATA, AVAILABLE_TREES } from '../constants';
-import { SkillNode, CameraState, NodeStatus, PageView } from '../types';
+import { SkillNode, CameraState, NodeStatus, PageView, SkillLink } from '../types';
 import { ThemeType, ThemeConfig } from './skill-tree/types';
 import SkillTreeSelector from './skill-tree/SkillTreeSelector';
+import CreateSkillTreeModal from './skill-tree/CreateSkillTreeModal';
 
 // Original Themes
 import { COSMIC_THEME, CosmicBackground, CosmicNode } from './skill-tree/themes/Cosmic';
@@ -76,7 +77,12 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const [activeTheme, setActiveTheme] = useState<ThemeType>('COSMIC');
   const [activeTreeId, setActiveTreeId] = useState<string>('fullstack');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   
+  // State for dynamic trees
+  const [availableTrees, setAvailableTrees] = useState(AVAILABLE_TREES);
+  const [treeDataMap, setTreeDataMap] = useState(SKILL_TREES_DATA);
+
   const [camera, setCamera] = useState<CameraState>({ x: -200, y: -100, zoom: 1 });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -88,9 +94,26 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
   const NodeComponent = NODE_COMPONENTS[activeTheme];
 
   // Get current tree data
-  const currentTreeData = SKILL_TREES_DATA[activeTreeId] || SKILL_TREES_DATA['fullstack'];
+  const currentTreeData = treeDataMap[activeTreeId] || treeDataMap['fullstack'];
   const currentNodes = currentTreeData.nodes;
   const currentLinks = currentTreeData.links;
+
+  const handleCreateTree = (treeId: string, treeName: string, nodes: SkillNode[], links: SkillLink[]) => {
+      // 1. Add to data map
+      setTreeDataMap(prev => ({
+          ...prev,
+          [treeId]: { nodes, links }
+      }));
+
+      // 2. Add to available list
+      setAvailableTrees(prev => [
+          ...prev,
+          { id: treeId, name: treeName }
+      ]);
+
+      // 3. Switch to it
+      setActiveTreeId(treeId);
+  };
 
   // --- INTERACTION HANDLERS ---
 
@@ -234,9 +257,17 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
           <SkillTreeSelector
             currentTreeId={activeTreeId}
             onSelectTree={setActiveTreeId}
-            trees={AVAILABLE_TREES}
+            trees={availableTrees}
             theme={theme}
           />
+
+          <button
+             onClick={() => setShowCreateModal(true)}
+             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg border border-transparent hover:bg-white/10 ${theme.panelClass}`}
+             title="Aprender nueva habilidad"
+          >
+             <Plus size={18} />
+          </button>
 
           {/* THEME SELECTOR */}
           <div className="relative">
@@ -461,6 +492,13 @@ const SkillTreePage: React.FC<SkillTreePageProps> = ({ onNavigate }) => {
              </div>
           </div>
       </div>
+
+      {showCreateModal && (
+        <CreateSkillTreeModal
+            onClose={() => setShowCreateModal(false)}
+            onCreate={handleCreateTree}
+        />
+      )}
 
     </div>
   );
